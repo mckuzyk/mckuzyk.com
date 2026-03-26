@@ -1,0 +1,29 @@
+baseURL: "https://mckuzyk.com/"
+languageCode: en-us
+title: "McKuzyk"
+theme: PaperMod
+
+params:
+  homeInfoParams:
+    Title: "Hi, I'm Mark"
+    Content: "Physicist turned data scientist with a habit of learning things the hard way. I write about ML projects — half to share ideas, half to make sure I actually understand them."
+  socialIcons:
+    - name: github
+      url: "https://github.com/mckuzyk"
+    - name: linkedin
+      url: "https://www.linkedin.com/in/mark-kuzyk-113198aa/"
+
+menu:
+  main:
+    - name: About
+      url: /about/
+      weight: 10
+    - name: Resume
+      url: /resume/
+      weight: 20
+    - name: CV
+      url: /cv/
+      weight: 25
+    - name: Blog
+      url: /posts/
+      weight: 30
