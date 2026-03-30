@@ -12,6 +12,7 @@ params:
       url: "https://github.com/mckuzyk"
     - name: linkedin
       url: "https://www.linkedin.com/in/mark-kuzyk-113198aa/"
+  math: true
 
 menu:
   main:
@@ -27,3 +28,18 @@ menu:
     - name: Blog
       url: /posts/
       weight: 30
+
+markup:
+  goldmark:
+    extensions:
+      passthrough:
+        delimiters:
+          block:
+            - - '$$'
+              - '$$'
+          inline:
+            - - '$'
+              - '$'
+        enable: true
+    renderer:
+      unsafe: true
