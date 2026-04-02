@@ -3,7 +3,7 @@ layout: "page"
 url: "/about/"
 summary: "About me"
 date: '2026-03-26T15:02:40-07:00'
-draft: true
+draft: false
 title: 'About'
 ---
 
