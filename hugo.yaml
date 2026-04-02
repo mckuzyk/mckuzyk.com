@@ -6,7 +6,7 @@ theme: PaperMod
 params:
   homeInfoParams:
     Title: "Hi, I'm Mark"
-    Content: "Physicist turned data scientist with a habit of learning things the hard way. I write about ML projects — half to share ideas, half to make sure I actually understand them."
+    Content: "Physicist turned data scientist. I spent a decade studying light before realizing data pays better. I write about ML, math, and whatever else I'm trying to figure out — half to share ideas, half to make sure I actually understand them."
   socialIcons:
     - name: github
       url: "https://github.com/mckuzyk"
