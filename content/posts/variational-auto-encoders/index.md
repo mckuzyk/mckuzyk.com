@@ -4,7 +4,7 @@ description: 'Learning a Bayesian data generation model for a noisy sprial'
 tags: ["machine learning", "VAEs", "unsupervised learning", "PyTorch"]
 date: '2026-04-06T11:42:51-07:00'
 math: true
-draft: true
+draft: false
 ---
 
 ## Introduction
@@ -86,11 +86,16 @@ $$
 &=& D_{KL}(q_\phi(z|x)||p_\theta(z|x)) + \mathcal{L}(\theta, \phi; x)
 \end{eqnarray}
 $$
-The term $D_{KL}(q_\phi(z|x)||p_\theta(z|x))$ is the Kullback-Leibler (KL)
-divergence – a function that is strictly non-negative, and equals zero only when
-the $q_\phi(z|x) = p_\theta(z|x)$. The second term is called the *variational
+
+The term $D_{KL}(q_\phi(z|x)||p_\theta(z|x)) \equiv
+\mathbb{E}_{q_\phi(z|x)}\left[\log q_\phi(z|x) - \log p_\theta(z|x) \right]$ is
+the
+[Kullback-Leibler](https://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence)
+(KL) divergence – a function that is strictly non-negative, and equals zero only
+when $q_\phi(z|x) = p_\theta(z|x)$. The second term is called the *variational
 lower bound*, or *evidence lower bound* (ELBO), since the non-negativity of
 $D_{KL}$ ensures that
+
 $$
 \begin{eqnarray}
 \mathcal{L}(\theta, \phi; x) &=& \log p_\theta(x) - D_{KL}(q_\phi(z|x)||p_\theta(z|x)) \\
@@ -152,10 +157,11 @@ p_\theta(z) \sim
 \mathcal{N}\left(0, I \right)
 \end{equation}
 $$
-We are going to learn $\mu_\phi(x)$ and $\sigma_\phi(x)$ through a neural network
-(the encoder), and $\mu_\theta(z)$ and $\sigma_\theta(z)$ through another neural
-network (the decoder). The loss will be composed of 2 terms, according to
-equation \ref{eq:ELBO}.
+In other words, we are assuming multivariate Gaussian distributions with zero
+covariance. We are going to learn $\mu_\phi(x)$ and $\sigma_\phi(x)$ through a
+neural network (the encoder), and $\mu_\theta(z)$ and $\sigma_\theta(z)$ through
+another neural network (the decoder). The loss will be composed of 2 terms,
+according to equation \ref{eq:ELBO}.
 
 The first term, given the choice of normal distribution
 families, can be expressed analytically as
@@ -218,10 +224,10 @@ $$
 \end{equation}
 $$
 
-The two epxectations are equivalent, but the right-hand side has the crucial
+The two expectations are equivalent, but the right-hand side has the crucial
 property that $\phi$ only enters through the deterministic, differentiable
 function $g_\phi$, while the randomness is isolated in $\epsilon$. Gradients can
-now flow through $g_\phi$ using standard backpropagation.
+now flow through $g_\phi$ using standard automatic differentiation.
 
 For the Gaussian case we've been discussing, where $q_\phi(z|x) \sim
 \mathcal{N}(\mu_\phi(x), \sigma_\phi(x))$, the reparameterization takes a
@@ -280,8 +286,8 @@ distribution of $y$ for a fixed $x$ where the spiral crosses vs. an $x$ far from
 a crossing). However, once the latent variable $t$ has been specified, $x(t)$
 and $y(t)$ are independent random variables since $\epsilon_x$ and $\epsilon_y$
 are independent. That means $x$ and $y$ are independent conditioned on $t$, so
-$p_\theta(x,y|z) = p_\theta(x|z) p_\theta(y|z)$. Then using equations
-\ref{eq:xt}, \ref{eq:yt},
+$p_\theta(x,y|z) = p_\theta(x|z) p_\theta(y|z)$, which is precisely what makes
+the latent variable useful. Using equations \ref{eq:xt}, \ref{eq:yt},
 
 $$
 \begin{equation}
@@ -289,6 +295,7 @@ p_\theta(x,y|z=t) = \mathcal{N}(\dot{r}t\cos(\omega t), \sigma_{data}^2)
 \cdot \mathcal{N}(\dot{r}t\sin(\omega t), \sigma_{data}^2)
 \end{equation}
 $$
+
 In other words, the variance in our generative model $p_\theta(x,y|z)$ is a
 constant, equal to $\sigma^2_{data}$. This property of our data model – that the
 observation noise is constant and known – will directly inform our choice of
@@ -337,8 +344,8 @@ The encoder takes in a data point $\mathbf{x} = (x,y)$, and produces two outputs
 $\mu_\phi(\mathbf{x})$, $\log\sigma^2_\phi(\mathbf{x})$. The model is assumed to
 output log variance for numerical stability. The default `latent_dims=1`
 reflects our data model, where a single parameter $t$ generates each
-observation. The `hidden_dim=32` and `hidden_layers=1` works for simple spiral
-data, though in some of my tests I've bumped them up to 64 and 2 respectively.
+observation. The `hidden_dim=32` and `hidden_layers=1` work for simple spiral
+data.
 
 #### Reparameterization Trick
 The encoder gives us the predictions for $\mu_\phi(\mathbf{x})$,
@@ -439,12 +446,18 @@ $$
 \frac{1}{L}\sum_{l=1}^L \log\left(
 \mathcal{N}\left(\mu_\theta(z^{(l)}), \sigma_\theta(z^{(l)}) \right) \right) &=&
 \log \mathcal{N}\left(\mu_\theta(z), \sigma)\right) \nonumber \\
-&=& -\frac{1}{2\sigma^2}||x - \mu_\theta(z)||^2 + const \nonumber
+\label{eq:reconstruction_loss_sigma}
+&=& -\frac{1}{2\sigma^2}\sum_{i=1}^{D}(x_i - \mu_\theta(z)_i)^2 -
+\frac{D}{2}\log\left(2\pi\sigma^2 \right)  \\
+&=& -\frac{1}{2\sigma^2}||x - \mu_\theta(z)||^2 + const 
 \end{eqnarray}
 $$
 
-which means the reconstruction loss boils down to an MSE loss, since any
-additive constant will drop out in the gradient and can be dropped.
+where the sum $i$ is over the dimensions, of which there are $D$ ($D = 2$ in our
+case). This means the reconstruction loss boils down to an MSE loss, since any
+additive constant will drop out in the gradient and can be dropped. Also note
+that the constant term is only constant and dropped under the current assumption
+that $\sigma$ is a set constant.
 
 ```python
 def reconstruction_loss(x, mu, sigma=1.0):
@@ -475,6 +488,10 @@ To assess the VAE, I'm looking at 3 things:
    \mathcal{N}(0,1)$ into the decoder.
 
 ![basic run results](images/basic_run.svg)
+*Left: Latent space learned by VAE encoder. Center: Reconstruction of underlying
+spiral from training data, with the exact generating model shown for comparison.
+Right: New samples produced by the decoder, with the exact spiral shown for
+reference.*
 
 The three panels of the results collectively demonstrate the VAE has learned a
 meaningful latent representation of the dataset, can reconstruct the manifold,
@@ -486,9 +503,16 @@ encoder to predict the value of the latent variable $t$. Since we know the true
 value of the latent variable that was used to generate the data, we should hope
 that a plot $\mu_\phi(\mathbf{x})$ against $t$ should be smooth, and somewhat
 linear, and that is precisely what we see! Notice that near $t=0$, there appears
-to be a bit more noise. This likely has to do with the fact that the region near
-$t=0$ corresponds to the inner portion of the spiral, where a given point
-$(x,y)$ could plausibly be generated by two distinct values of $t$.
+to be a bit more noise. We know that points near the origin have small $r$, so
+$(x,y)$ points are close together regardless of $t$, making it harder for the
+encoder to assign a unique $t$ to each point. This difficulty in assigning a
+unique $t$ becomes fundamental if we were to generate a spiral with multiple
+revolutions. Inverting equations \ref{eq:xt} and \ref{eq:yt} of the data
+generating process for $t$ leads to the equation $\omega t = \tan^{-1}(y/x)$,
+which is only defined modulo $2\pi$. So, a point $(x,y)$ with $y=0$, for
+example, is equally consistent with $\omega t = 0, 2\pi, 4\pi,...$ The encoder
+has no way to resolve which revolution a point belongs to, and our model with a
+single latent variable would be misspecified.
 
 The center panel shows how well the VAE can reconstruct the underlying spiral
 structure from the noisy data points. The training data are shown in gray, and
@@ -509,11 +533,16 @@ $\mathcal{N}(\mu_\theta(z), \sigma^2)$, where again, $\sigma^2$ is the fixed
 isotropic variance that we are setting manually to match the variance in the
 data.
 
+It is clear that the samples generated from this procedure mimic the true data
+excellently. 
+
+In training this model, we had the luxury of knowing the underlying
+process, and we set $\sigma^2 = \sigma^2_{data}$ accordingly. In a real
+application, we probably won't know what the true value of $\sigma_{data}$ is.
+
 ### What if $\sigma$ is Chosen Wrong?
-When we trained the model, we took advantage of the fact that we knew the
-underlying process, and we set $\sigma^2 = \sigma^2_{data}$. In the real world,
-$\sigma$ isn't necessarily going to be known. So what happens during training if
-we pick a value for $\sigma$ that doesn't match the true process?
+So what happens during training if we pick a value for $\sigma$ that doesn't
+match the true process?
 
 To study what might happen in practice, the system from the previous section was
 run with $\sigma$ varied. The only other change I made was to add one additional
@@ -521,6 +550,9 @@ hidden layer to the encoder and decoder so the model has at some capacity to
 overfit.
 
 ![spiral series](images/spiral_series.svg)
+*Left: Model overfitting when $\sigma \ll \sigma_{data}$. Center: Successful
+training when $\sigma = \sigma_{data}$. Right: Posterior collapse
+when $\sigma \gg \sigma_{data}$.*
 
 To get a sense of what's happening, let's examine our loss function with the
 current assumptions ($\sigma$ fixed, Gaussian distributions), which has the
@@ -551,6 +583,8 @@ posterior collapse, let's take a look at the distribution of
 $\mu_\phi(\mathbf{x})$ and $\sigma^2_\phi(\mathbf{x})$ across our training set.
 
 ![posterior collapse](images/posterior_collapse_hist.svg)
+*Posterior Collapse: The encoder maps every input to the same distribution,
+$\mathcal{N}(0,1)$.*
 
 Remember that for the VAE that behaved well in the main results, the latent
 space plot indicates a fairly uniform distribution of $\mu_\phi(\mathbf{x})$ in
@@ -565,15 +599,26 @@ reconstruction and regularization, as the center panel demonstrates.
 ### What if $\sigma$ is Unknown?
 The experiments just presented show empirically what happens when
 $\sigma$ is misspecified — but in a real problem where the true noise is
-unknown, the approaches below offer more principled alternatives. There are two
-scenarios, presented in order of increasing complexity:
+unknown, the approaches below offer more principled alternatives. I present them
+here for completeness, but they are too complex to squeeze into this single
+post. There are two scenarios, presented in order of increasing complexity:
 
 #### Isotropic
 If the noise is modeled as isotropic but $\sigma$ is treated as a learnable
 scalar rather than a function of $z$, we can write $\sigma_\theta(z) \rightarrow
 \sigma_\theta$. The reconstruction loss is no longer MSE, but we can explicitly
 differentiate the reconstruction term with respect to $\sigma^2$ and find an
-analytical expression for the value that minimizes the loss:
+analytical expression for the value that minimizes the loss. Starting from
+equation \ref{eq:reconstruction_loss_sigma} and setting the derivative of
+$\sigma^2$ to zero:
+
+$$
+\begin{equation}
+\frac{1}{2\sigma^4}\sum_{i=1}^D(x_i - \mu_\phi(z)_i)^2 - \frac{D}{2\sigma^2} = 0
+\end{equation}
+$$
+
+leading to the optimal value of $\sigma^2$
 
 $$
 \begin{equation}
@@ -585,6 +630,9 @@ $$
 So we could update $\sigma^2$ in an alternating fashion by taking an
 optimization step on $\mu_\theta$, and then updating $\sigma$ according to
 equation \ref{eq:iso_learned_sigma}.
+
+Readers interested in exploring this topic more should check out the paper
+[Taming VAEs](https://arxiv.org/abs/1810.00597) by Rezende and Viola.
 
 #### Anisotropic
 In the most general case, the noise levels can differ across input dimensions.
@@ -603,23 +651,24 @@ $$
 where the sum $i$ is over the dimensions of the input. This route adds
 complexity and can make training more touchy, but in cases where there's good
 evidence that the variance is anisotropic and unknown, it may be the best
-option.
+option. I haven't come across a good reference that discusses how to approach
+this problem.
 
 ## Conclusion
 In this post we built a VAE from scratch and applied it to a problem where the
 underlying generative process was fully known. That choice was deliberate — by
-working with a dataset where we could derive p(x,y∣t)p(x,y|t) p(x,y∣t)
-analytically, we were able to connect every modeling decision back to first
-principles rather than treating the architecture as a black box.
+working with a dataset where we could derive $p(x,y|t)$ analytically, we were
+able to connect every modeling decision back to first principles rather than
+treating the architecture as a black box.
 
 The key takeaways are threefold. First, the VAE framework is remarkably general:
 two Gaussian assumptions and the reparameterization trick are enough to turn an
 intractable probabilistic inference problem into a differentiable optimization
-problem. Second, the decoder variance σ\sigma σ is not just a tuning knob — it
+problem. Second, the decoder variance $\sigma$ is not just a tuning knob — it
 encodes a genuine assumption about the data generating process, and
 misspecifying it leads to predictable failure modes in both directions. Third,
 the latent space that emerges from a well-trained VAE genuinely reflects the
-structure of the data, as the smooth recovery of the spiral parameter tt t
+structure of the data, as the smooth recovery of the spiral parameter $t$
 demonstrates.
 
 This post focused on a synthetic dataset where the generative process was fully
