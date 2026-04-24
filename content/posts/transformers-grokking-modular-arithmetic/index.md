@@ -21,22 +21,23 @@ training samples, often by a factor of 5 or 10, to avoid overfitting.
 Modern transformers can violate this rule spectacularly, and the consequences
 are surprising. In some cases, a transformer with vastly more parameters than
 training samples will overfit early in training as expected, but as training
-continues will discover a generalizing solution on their own. This is grokking.
+continues will discover a generalizing solution on its own. This is grokking.
 
 In this post, I'll walk through the grokking phenomenon on modular addition. The
-transformer used in this work has 226,688 parameters, roughly 750,000x smaller
-than GPT-3! The simplified transformer model will allow us to peek under the
-hood and see how the model goes from overfitting on a training set containing
-only 3,830 samples to perfect generalization. What the model learns turns out to
-be quite elegant – a sparse Fourier representation that threads through every
-layer of the network.
+transformer used in this work has 226,688 parameters, roughly 750,000x fewer
+parameters than GPT-3! The simplified transformer model will allow us to peek
+under the hood and see how the model goes from overfitting on a training set
+containing only 3,830 samples to perfect generalization. What the model learns
+turns out to be surprisingly beautiful – waves propagating through every layer
+of the network, combining at the output to form the correct answer.
 
 ## Grokking
 Grokking was first observed in 2022 by [Power et
 al](https://arxiv.org/abs/2201.02177), and the mechanism the transformer learned
 in the context of modular addition was reverse engineered by [Nanda et
 al](https://arxiv.org/abs/2301.05217). Here, I largely followed the design and
-analysis of Nanda, and also found [A Mathematical Framework for Transformer
+analysis of Nanda et al, and also found [A Mathematical Framework for
+Transformer
 Circuits](https://transformer-circuits.pub/2021/framework/index.html) to be a
 useful resource.
 
@@ -63,11 +64,10 @@ smoothly toward the generalizing solution.
 immediately while test accuracy remains near zero before undergoing a sharp
 phase transition around epoch 10,000.*
 
-These results are striking. In the beginning, the model immediately overfits to
-the training data, as we would expect given we have about 60 adjustable model
-parameters for every training sample! But much later in training, the system
-appears to undergo a phase transition to a configuration where it can generalize
-perfectly to any unseen test sample!
+These results are striking. We have roughly $226,688/3,830 \approx 59$
+adjustable model parameters for every training sample, yet the model eventually
+finds a perfectly generalizable solution. The natural question is: what exactly
+did it learn?
 
 ## Implementation
 ### Overview
@@ -81,11 +81,11 @@ contains a sequence of tokens of length $n_{context}$ which are embedded to form
 an input matrix $x_0$ with dimensions $(n_{context}, d_{model})$. $x_0$ is then
 fed through one or more blocks, where each block consists of a multi-head
 attention layer and a multilayer perceptron (MLP) layer. The output of each
-layer in the block is added to the input forming residual connections. It is useful
-to picture the whole network as a residual stream, where each component of each
-block successively reads in the current state of the stream, processes it, and
-then writes its output back into the stream (see [A Mathematical Framework for
-Transformer
+layer in the block is added to the input, forming residual connections. It is
+useful to picture the whole network as a residual stream, where each component
+of each block successively reads in the current state of the stream, processes
+it, and then writes its output back into the stream (see [A Mathematical
+Framework for Transformer
 Circuits](https://transformer-circuits.pub/2021/framework/index.html)). This
 general architecture is depicted in the figure below.
 
@@ -112,7 +112,7 @@ below, labeled with the notation used in this post.
 
 The input $x_0$ is fed to each head of the attention block, where the $Q$, $K$,
 and $V$ matrices are computed by learnable linear projections $W_Q$, $W_K$,
-$W_V$ on the input with no biases. In the attention computation $A = f(QK^T) /
+$W_V$ of the input with no biases. In the attention computation $A = f(QK^T) /
 \sqrt{d_k}$, the function $f$ is a softmax, and $d_k$ is the dimension of the
 key, which here is equal to $d_{head}$. The output is projected by another
 linear projection $W_O$.
@@ -148,7 +148,8 @@ consistently appeared around 10,000 epochs, as shown in the bottom panel.
 ![implementation_details](images/implementation_details.svg)
 *Implementation details can have a dramatic impact on training. Top: float32
 precision errors cause slingshots. Bottom: PyTorch's default weight
-initialization leads to very slow emergence of grokking.*
+initialization leads to very slow emergence of grokking (outside of the training
+window pictured).*
 
 With the training dynamics behaving as expected, we can now turn to the more
 interesting question: what exactly has the model learned?
@@ -161,7 +162,7 @@ generalized modular addition problem.
 
 ### Input Embedding
 The input embedding is where the transformer builds a semantically meaningful
-representation of the input tokens in a high dimensional space that it can
+representation of the input tokens in a high-dimensional space that it can
 process through the residual stream. The success of all downstream processing
 depends on these embeddings being well-structured for the problem.
 
@@ -176,13 +177,13 @@ the structure of the learned embedding space.
 </figure>
 
 The figure above shows the top 5 pairs of principal axes for all 113 input
-embeddings. Each color represents a different pair. Clearly this is a highly
-structured space. The circles suggest that components of the embeddings are
-varying sinusoidally, since a circle can be parameterized as $(x(t), y(t)) =
+embeddings. Each color represents a different pair. Clearly there is some
+structure to this space. The circles suggest that components of the embeddings
+are varying sinusoidally, since a circle can be parameterized as $(x(t), y(t)) =
 (\cos(\alpha t), \sin(\alpha t))$. To verify this, let's take a look at the
 Fourier transform of the input embedding matrix $W_E$ along the $P$-dimensional
 input axis. We average the Fourier power over the $d_{model}$ dimension to
-arrive at a single trace indicating any periodic structure to the input
+arrive at a single spectrum indicating any periodic structure to the input
 embeddings.
 
 ![embedding_fft_before_after](images/embedding_fft_before_after.svg)
@@ -227,10 +228,10 @@ did confirm the attention patterns of $A_{2,1}$ appear identical).
 *Learned attention structure from the "=" token to token $a$ from each attention
 head across the full set of inputs $(a,b)$.*
 
-The structure is immediately clear. Each head has clear periodic structure. The
-top two heads appear visually similar, though ablation tests showed that
-removing either one significantly degrades accuracy. The bottom two are
-head distinctly different from each other and the top.
+The structure is immediately apparent: each head has clear periodic structure.
+The top two heads appear visually similar, though ablation tests showed that
+removing either one significantly degrades accuracy. The bottom two heads are
+distinctly different from each other and from the top pair.
 
 So, the embeddings are periodic with a few key frequencies, and the attention
 heads are clearly periodic too. Do they use the same frequency components as the
@@ -248,9 +249,9 @@ frequencies. They appear as bright yellow spots along the top and left edges of
 the plots. Because those contributions were so large, these plots are showing
 the $\log$ of the power spectra so that other frequencies are visible. 
 
-It's also quite interesting to note that the bottom left panel appears to be the
-only attention head where the frequencies aren't separable. When testing other
-random seeds, I found that there isn't always a non-separable head like this.
+Notably, the bottom left panel appears to be the only attention head where the
+frequencies aren't separable. When testing other random seeds, I found that
+there isn't always a non-separable head like this.
 
 In every test, the attention heads operate at the same frequencies established
 in the embedding space, though the specific patterns vary. Let's follow that
@@ -280,14 +281,14 @@ stream post MLP $x_2$, and output $W_L$.*
 
 The evolution makes it clear that the same Fourier structure is preserved
 throughout the network. There is also a clear selective amplification and
-filtering taking place. Between the input and output matrices, there's a roughly
-10x amplification, while the broad peaks in $W_E$ sharpen to
-near-single-frequency spikes in $W_L$. In the residual stream, there's an even
-more dramatic 50x amplification. At every point, the relative amplitudes of the
-key frequencies appear to vary, suggesting the network is doing something more
-sophisticated than uniform amplification. The filtering and amplification of key
-frequencies is apparent in the fraction of total power contained in the key
-frequencies, summarized in the table below.
+filtering. Between the input and output matrices, there's a roughly 10x
+amplification, while the broad peaks in $W_E$ sharpen to near-single-frequency
+spikes in $W_L$. In the residual stream, there's an even more dramatic 50x
+amplification. At every point, the relative amplitudes of the key frequencies
+appear to vary, suggesting the network is doing something more sophisticated
+than uniform amplification. The filtering and amplification of key frequencies
+is apparent in the fraction of total power contained in the key frequencies,
+summarized in the table below.
 
 | Stage | Key Frequency Power Fraction |
 |-------|------------------------------|
@@ -304,16 +305,17 @@ power in the key frequencies.
 So what is the network actually doing with this Fourier structure? First of all,
 in hindsight a Fourier basis is a natural choice for solving modular addition –
 both the basis and the solution we seek are periodic with period $P$. For a
-detailed analysis of the mechanisms, take a look at Nanda's paper (link provided
-above). Here's the layout of what's happening.
+detailed analysis of the mechanisms, take a look at [Nanda et
+al](https://arxiv.org/abs/2301.05217). Here's the layout of what's happening.
 
 ### The Algorithm
-First, as discussed above, the token $a$ (and similarly $b$) are encoded as
+First, as discussed above, the token $a$ (and similarly $b$) is encoded as
 $\sin$ and $\cos$ of a number of angles $\omega_k a \equiv 2\pi k a /P$ for the
-key frequencies $\omega_k$. In the attention heads, the bilinear $QK^T$ interaction
-computes products of Fourier components $\cos(\omega_ka)\cos(\omega_kb)$ and
-$\sin(\omega_ka)\sin(\omega_kb)$. The MLP then computes the angle sums from the
-products according to the trigonometric identities
+key frequencies $\omega_k$. In the attention heads, the bilinear $QK^T$
+interaction computes products of Fourier components
+$\cos(\omega_ka)\cos(\omega_kb)$ and $\sin(\omega_ka)\sin(\omega_kb)$. The MLP
+then computes the angle sums from the products according to the trigonometric
+identities
 
 $$
 \begin{eqnarray}
@@ -357,27 +359,26 @@ to probability.*
 The figure above shows how this manifests when the transformer adds the numbers
 50 and 37. In the top panel, I'm directly estimating the logits using equation
 \ref{eq:logit} for the key frequencies having $k \in \{24,45,52\}$. The
-contributions from just those frequencies, out of 113 total frequencies, gives
+contributions from just those frequencies, out of 113 total frequencies, give
 almost perfect overlap with the logits computed by the transformer. The middle
 panel adds all 113 frequencies, and has perfect agreement with the logits. It's
-worth stressing again that the blue lines are computed independently from 
-what the network is doing. The only information we're using is that the network
-appears to be operating on the 3 key frequencies we identified. And yet, we can
-fully reproduce all of the raw logit scores, indicating that our Fourier model
-matches the mechanics that are actually taking place in the transformer. While
-the score of the correct logit doesn't look much above the noise, the softmax
-function exponentiates the logits before normalizing, so even modest differences
-in raw scores translate to dramatically different probabilities. As the
-bottom panel shows, the model is actually extremely confident in the correct
-answer.
+worth stressing again that the blue lines are computed independently of what the
+network is doing. The only information we're using is that the network appears
+to be operating on the 3 key frequencies we identified. And yet, we can fully
+reproduce all of the raw logit scores, indicating that our Fourier model matches
+the mechanics actually operating in the transformer. While the score of the
+correct logit doesn't look much above the noise, the softmax function
+exponentiates the logits before normalizing, so even modest differences in raw
+scores translate to dramatically different probabilities. As the bottom panel
+shows, the model is actually extremely confident in the correct answer.
 
 ## Closing Thoughts
 It's fascinating how much structure a small transformer encodes when solving
 even a simple problem. Rather than memorizing 3,830 input-output pairs, the
 model discovered a compact mathematical algorithm that exploits the periodicity
 of modular arithmetic through a sparse Fourier representation that threads
-consistently through every layer of the network, culminating in an interference
-of waves at the output that naturally produces the correct answer.
+through every layer of the network, culminating in an interference of waves at
+the output that naturally produces the correct answer.
 
 This mechanism — waves of the same frequency combining constructively at one
 point and destructively everywhere else — has a striking parallel in quantum
