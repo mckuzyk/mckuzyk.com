@@ -4,6 +4,8 @@ title: "McKuzyk"
 theme: PaperMod
 
 params:
+  ShowDescriptionInList: true
+  ShowReadingTime: true
   homeInfoParams:
     Title: "Hi, I'm Mark"
     Content: "Physicist who wandered into data science and never left. I write about ML, math, and whatever else I'm trying to figure out — half to share ideas, half to make sure I actually understand them."
