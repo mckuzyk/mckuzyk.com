@@ -4,6 +4,7 @@ title: "McKuzyk"
 theme: PaperMod
 
 params:
+  defaultTheme: light
   ShowDescriptionInList: true
   ShowReadingTime: true
   homeInfoParams:
