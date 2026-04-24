@@ -1,7 +1,8 @@
 ---
 date: '2026-04-21T10:31:12-07:00'
-draft: true
+draft: false
 title: 'Waves All the Way Down'
+summary: "How a transformer learns to compute modular addition, and what it reveals about generalization"
 description: "How a transformer learns to compute modular addition, and what it reveals about generalization"
 math: true
 tags: ["transformers", "grokking", "mechanistic interpretability", "Fourier analysis", "PyTorch"]
