@@ -1,6 +1,7 @@
 ---
 title: 'Variational Auto Encoders'
 description: 'Learning a Bayesian data generation model for a noisy sprial'
+summary: 'Learning a Bayesian data generation model for a noisy sprial'
 tags: ["machine learning", "VAEs", "unsupervised learning", "PyTorch"]
 date: '2026-04-06T11:42:51-07:00'
 math: true

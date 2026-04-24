@@ -1,6 +1,7 @@
 ---
 title: 'Physics Informed Neural Networks'
 description: 'Learning the heat equation from sparse data'
+summary: 'Learning the heat equation from sparse data'
 tags: ["machine learning", "physics", "PINNs", "PyTorch"]
 date: '2026-03-28T19:50:27-07:00'
 draft: false
