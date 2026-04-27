@@ -9,6 +9,7 @@ math: true
 tags: ["transformers", "grokking", "mechanistic interpretability", "Fourier analysis", "PyTorch"]
 cover:
     image: "images/training_dynamics.svg"
+    hiddenInSingle: true
 ---
 
 ## Introduction
