@@ -1,4 +1,5 @@
 ---
+author: Mark C. Kuzyk
 title: 'Variational Auto Encoders'
 description: 'Learning a Bayesian data generation model for a noisy sprial'
 summary: 'Learning a Bayesian data generation model for a noisy sprial'

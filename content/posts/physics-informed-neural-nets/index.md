@@ -1,4 +1,5 @@
 ---
+author: Mark C. Kuzyk
 title: 'Physics Informed Neural Networks'
 description: 'Learning the heat equation from sparse data'
 summary: 'Learning the heat equation from sparse data'

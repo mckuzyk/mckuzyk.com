@@ -1,4 +1,5 @@
 ---
+author: Mark C. Kuzyk
 date: '2026-04-21T10:31:12-07:00'
 draft: false
 title: 'Waves All the Way Down'
@@ -6,6 +7,8 @@ summary: "How a transformer learns to compute modular addition, and what it reve
 description: "How a transformer learns to compute modular addition, and what it reveals about generalization"
 math: true
 tags: ["transformers", "grokking", "mechanistic interpretability", "Fourier analysis", "PyTorch"]
+cover:
+    image: "images/training_dynamics.svg"
 ---
 
 ## Introduction
