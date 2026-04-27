@@ -8,7 +8,7 @@ description: "How a transformer learns to compute modular addition, and what it 
 math: true
 tags: ["transformers", "grokking", "mechanistic interpretability", "Fourier analysis", "PyTorch"]
 cover:
-    image: "images/training_dynamics.png"
+    image: "posts/transformers-grokking-modular-arithmetic/images/training_dynamics.png"
     hiddenInSingle: true
     hiddenInList: true
 ---
