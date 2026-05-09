@@ -2,6 +2,7 @@ baseURL: "https://mckuzyk.com/"
 languageCode: en-us
 title: "McKuzyk"
 theme: PaperMod
+trailingSlash: never
 
 params:
   defaultTheme: light
@@ -20,16 +21,16 @@ params:
 menu:
   main:
     - name: About
-      url: /about/
+      url: /about
       weight: 10
     - name: Resume
-      url: /resume/
+      url: /resume
       weight: 20
     - name: CV
-      url: /cv/
+      url: /cv
       weight: 25
     - name: Blog
-      url: /posts/
+      url: /posts
       weight: 30
 
 markup:
